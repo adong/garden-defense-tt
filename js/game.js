@@ -199,7 +199,7 @@
     G.hover = null;
     setupBuddyButton();
     const L = LEVELS[i];
-    banner(`${Kit.lang.t('GARDEN')} ${L.id}`, L.name);
+    banner(`GARDEN ${L.id}`, L.name);
     setTimeout(() => { if (G.sim && G.sim.level === L && G.state === 'play') toast(L.tip, 'tip', 4.5); }, 1200);
     Kit.sound.music('play');
     hud(true);
@@ -224,7 +224,7 @@
     if (G.state !== 'play') return;
     closeMenus();
     G.state = 'paused';
-    $('pauseInfo').textContent = `${Kit.lang.t('GARDEN')} ${LEVELS[G.idx].id} · ${Kit.lang.t(G.easy ? '🐣 EASY' : '🔥 NORMAL')}`;
+    $('pauseInfo').textContent = `GARDEN ${LEVELS[G.idx].id} · ${G.easy ? '🐣 EASY' : '🔥 NORMAL'}`;
     showScreen('pause');
     Kit.sound.music('pause');
   }
@@ -240,6 +240,8 @@
     closeMenus();
     endVisit(false);
     view.setHint(null);
+    view.setCursor(0, null);
+    view.setCursor(1, null);
     G.endT = 0;
     if (s.result === 'win') {
       G.state = 'won';
@@ -278,10 +280,11 @@
       $('resText').textContent = `${who} floated ${s.floated} critters away. Try again!`;
     }
     const best = save.best[G.who][L.id] || 0;
-    $('resScore').innerHTML = `${esc(Kit.lang.t('SCORE'))} ${r.score} · ${esc(Kit.lang.t('BEST'))} ${Math.max(best, r.score)}` + (r.newBest ? ` <span class="newbest">${esc(Kit.lang.t('NEW BEST!'))}</span>` : '');
+    $('resScore').innerHTML = `<span>SCORE ${r.score} · BEST ${Math.max(best, r.score)}</span>` + (r.newBest ? ' <span class="newbest">NEW BEST!</span>' : '');
     $('btnNext').classList.toggle('hidden', !r.win || G.idx + 1 >= LEVELS.length);
     $('btnTryEasy').classList.toggle('hidden', r.win || G.easy);
     $('btnAgain').textContent = '↻ PLAY AGAIN';
+    if (r.win) view.resultView();
     showScreen('result');
   }
 
@@ -310,7 +313,7 @@
     if (force || v.next !== lastHud.next) {
       const merged = {};
       if (nextW && v.next) for (const g of nextW) merged[g.type] = (merged[g.type] || 0) + g.n;
-      $('next').innerHTML = v.next ? `<span>${esc(Kit.lang.t('NEXT WAVE:'))}</span>` +
+      $('next').innerHTML = v.next ? '<span>NEXT WAVE:</span>' +
         Object.entries(merged).map(([t, n]) => `<img src="${iconOf(t)}" alt="">×${n}`).join(' ') : '';
       layout();
     }
@@ -341,7 +344,7 @@
   function banner(big, small, cls = '') {
     const el = $('banner');
     el.className = cls;
-    el.innerHTML = `${esc(Kit.lang.t(big))}${small ? `<small>${esc(Kit.lang.t(small))}</small>` : ''}`;
+    el.innerHTML = `<span>${esc(big)}</span>${small ? `<small>${esc(small)}</small>` : ''}`;
     void el.offsetWidth;
     el.classList.add('show');
     clearTimeout(bannerTimer);
@@ -353,8 +356,8 @@
     for (const e of evs) {
       switch (e.type) {
         case 'waveStart':
-          if (e.boss) banner('BANDIT BOSS!', `${Kit.lang.t('WAVE')} ${e.wave + 1}`, 'boss');
-          else banner(`${Kit.lang.t('WAVE')} ${e.wave + 1}`, e.wave === e.of - 1 ? 'LAST WAVE!' : '');
+          if (e.boss) banner('BANDIT BOSS!', `WAVE ${e.wave + 1}`, 'boss');
+          else banner(`WAVE ${e.wave + 1}`, e.wave === e.of - 1 ? 'LAST WAVE!' : '');
           sfx.wave(e.boss);
           break;
         case 'waveClear':
@@ -406,7 +409,7 @@
     if (t) {
       const T0 = TOWERS[t.type];
       add(`<span class="big">⬆</span><span class="cost" data-k="up"></span>`, () => doUpgrade(p), () => upInfo(t), 'up');
-      add(`<span class="big">🧺</span><span class="cost" data-k="sell"></span>`, () => doSell(p), () => [T0.name, `${Kit.lang.t('Pack it up and get coins back.')}`]);
+      add(`<span class="big">🧺</span><span class="cost" data-k="sell"></span>`, () => doSell(p), () => [T0.name, 'Pack it up and get coins back.']);
       add(`<span class="big">✕</span>`, () => closeMenu(p), () => [T0.name, ''], 'close');
     } else {
       ORDER.forEach((type, i) => {
@@ -426,7 +429,7 @@
   }
   function upInfo(t) {
     const T0 = TOWERS[t.type];
-    return [`${T0.name} ${'★'.repeat(t.lvl)}`, t.lvl < 3 ? Kit.lang.t('Upgrade: bigger, faster, wetter!') : Kit.lang.t('All the way up!')];
+    return [`${T0.name} ${'★'.repeat(t.lvl)}`, t.lvl < 3 ? 'Upgrade: bigger, faster, wetter!' : 'All the way up!'];
   }
   function refreshMenu(m, force) {
     const s = G.sim;
@@ -457,16 +460,21 @@
       else view.setRange(null);
     }
     const [name, tip] = m.items[m.focus] ? m.items[m.focus].info() : ['', ''];
-    m.head.innerHTML = name ? `<b>${esc(name)}</b>${esc(tip)}` : '&nbsp;';
+    m.head.innerHTML = name ? `<b>${esc(name)}</b><span class="tip">${esc(tip)}</span>` : '&nbsp;';
   }
   function placeMenu(m) {
     const p = view.toScreen(m.cell.c + 0.5, m.cell.r + 0.5);
     const w = m.el.offsetWidth, h = m.el.offsetHeight;
     const top0 = $('topbar').getBoundingClientRect().bottom + 6;
-    let x = p.x - w / 2, y = p.y - h - 34;
-    if (y < top0) y = p.y + 34;
-    if (y + h > window.innerHeight - 6) y = Math.max(top0, window.innerHeight - h - 6);
-    x = Math.max(8, Math.min(window.innerWidth - w - 8, x));
+    const W = window.innerWidth, H = window.innerHeight, gap = 34;
+    let x = p.x - w / 2, y = p.y - h - gap;
+    if (y < top0) y = p.y + gap; // no room above: below
+    if (y + h > H - 6) {
+      // no room above or below either (a phone on its side): beside the cell
+      y = Math.max(top0, Math.min(H - h - 6, p.y - h / 2));
+      x = p.x + gap + w <= W - 8 ? p.x + gap : p.x - gap - w;
+    }
+    x = Math.max(8, Math.min(W - w - 8, x));
     m.el.style.left = x + 'px';
     m.el.style.top = y + 'px';
   }
@@ -485,7 +493,7 @@
     if (!m || !s) return;
     if (s.coins < TOWERS[type].cost) {
       sfx.nope();
-      toast(`${Kit.lang.t('Need')} 🪙${TOWERS[type].cost - s.coins} ${Kit.lang.t('more coins!')}`, 'warn', 1.4);
+      toast(`Need 🪙${TOWERS[type].cost - s.coins} more coins!`, 'warn', 1.4);
       return;
     }
     if (Sim.build(s, type, m.cell.c, m.cell.r, owner(p))) {
@@ -499,7 +507,7 @@
     const t = Sim.towerById(s, m.tower);
     const cost = t && Sim.upgradeCost(t);
     if (cost === null || cost === undefined) { sfx.nope(); return; }
-    if (s.coins < cost) { sfx.nope(); toast(`${Kit.lang.t('Need')} 🪙${cost - s.coins} ${Kit.lang.t('more coins!')}`, 'warn', 1.4); return; }
+    if (s.coins < cost) { sfx.nope(); toast(`Need 🪙${cost - s.coins} more coins!`, 'warn', 1.4); return; }
     Sim.upgrade(s, t.id);
     G.hintT = 0;
     refreshMenu(m, true);
@@ -524,7 +532,7 @@
       closeMenu(p);
       sfx.nope();
       const ch = G.sim.map.at(cell.c, cell.r);
-      toast(Kit.lang.t('#SB'.includes(ch) ? 'Towers go on the grass, next to the path!' : 'No room here. Try the grass!'), 'warn', 1.5);
+      toast('#SB'.includes(ch) ? 'Towers go on the grass, next to the path!' : 'No room here. Try the grass!', 'warn', 1.5);
     }
   }
 
@@ -546,7 +554,7 @@
     G.visit = { who, t: 0, throws: 1, treated: false, said: false, thrown: false, leaving: false };
     view.buddyArrive(who);
     view.buddyMode('signature');
-    toast(`${NAMES[who]} ${Kit.lang.t('IS HERE!')}`, 'gold', 1.6);
+    toast(`${NAMES[who]} IS HERE!`, 'gold', 1.6);
     void s;
   }
   function treat(extra) {
@@ -575,7 +583,7 @@
     if (!v.treated && v.t > 1.2) { v.treated = true; view.buddyMode('give', 0.6); treat(false); }
     if (!v.said && v.t > 2.0) {
       v.said = true;
-      toast(`${NAMES[v.who]} ${Kit.lang.t('SAYS:')} ${Kit.lang.t(HELPER_LINES[Math.floor(Math.random() * HELPER_LINES.length)])}`, 'gold', 2.2);
+      toast(`${NAMES[v.who]} SAYS: ${HELPER_LINES[Math.floor(Math.random() * HELPER_LINES.length)]}`, 'gold', 2.2);
       view.buddyMode('jumpshot', 0.9);
     }
     if (!v.thrown && v.t > 2.5) {

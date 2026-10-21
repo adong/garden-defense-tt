@@ -421,6 +421,10 @@
       for (const [x, z] of [[0, 0], [map.w, 0], [0, map.h], [map.w, map.h]]) {
         pts.push(new T.Vector3(X(x), 0, Z(z)), new T.Vector3(X(x), 0.5, Z(z)));
       }
+      for (const g of map.gates) { // the flowery arches over the gates
+        const out = map.outward(g);
+        pts.push(new T.Vector3(X(g.c + 0.5 + out[0] * 0.7), 0, Z(g.r + 0.5 + out[1] * 0.7)));
+      }
       if (picnic) {
         for (const h of heroes) pts.push(new T.Vector3(h.x, 1.15, h.z), new T.Vector3(h.x, 0, h.z));
         pts.push(new T.Vector3(picnic.cx + picnic.out[0] * 0.8, 0, picnic.cz + picnic.out[1] * 0.8));
@@ -430,6 +434,7 @@
     function fit() {
       if (!map) return;
       const w = renderer.domElement.clientWidth || window.innerWidth, h = renderer.domElement.clientHeight || window.innerHeight;
+      if (!(w > 20 && h > 20)) return; // a hidden pane can report no size at all: try again on the next resize
       portrait = h > w * 1.08;
       const el = 0.98; // about 56 degrees down
       const dir = portrait ? new T.Vector3(Math.cos(el), Math.sin(el), 0) : new T.Vector3(0, Math.sin(el), Math.cos(el));
@@ -1015,27 +1020,46 @@
       const hs = heroes;
       if (!hs.length) return;
       const at = new T.Vector3();
-      for (const h of hs) at.add(new T.Vector3(h.x, 0, h.z));
-      at.divideScalar(hs.length);
+      if (win && picnic && camGoal.dir) {
+        // a picnic party: everyone hops onto the blanket, side by side, facing the camera
+        const toCam = camGoal.dir.clone().setY(0).normalize(), right = new T.Vector3(toCam.z, 0, -toCam.x);
+        at.set(picnic.cx, 0, picnic.cz).addScaledVector(toCam, 0.25);
+        hs.forEach((h, i) => {
+          const k = hs.length > 1 ? (i ? 0.5 : -0.5) : 0;
+          h.x = at.x + right.x * k;
+          h.z = at.z + right.z * k;
+          h.p.root.position.set(h.x, 0, h.z);
+          glows.emit({ x: h.x, y: 0.6, z: h.z }, { n: 16, color: ['#ffe066', '#ffffff'], speed: 1.4, up: 1.6, gravity: 1, life: 0.6, size: 0.14 });
+        });
+      } else {
+        for (const h of hs) at.add(new T.Vector3(h.x, 0, h.z));
+        at.divideScalar(hs.length);
+      }
       celebrate = { t: 0, win, at };
       if (win) hs.forEach((h, i) => signature(i, 0));
       else for (const h of hs) { h.mode = 'fall'; h.modeT = 0.8; h.hold = false; }
-      if (win) focus = { look: new T.Vector3(at.x, 0.5, at.z), D: hs.length > 1 ? 6.2 : 5 };
+      if (win) focus = { look: new T.Vector3(at.x, 0.5, at.z), D: hs.length > 1 ? 6.5 : 5.5 };
+    }
+    // behind the results panel: step back and lift the brothers into the top part of the screen
+    function resultView() {
+      if (!celebrate || !camGoal.dir) return;
+      const toCam = camGoal.dir.clone().setY(0).normalize();
+      focus = { look: celebrate.at.clone().addScaledVector(toCam, 1.5).setY(0.4), D: heroes.length > 1 ? 7.5 : 6.5 };
     }
     function stopCelebrate() { celebrate = null; focus = null; for (const h of heroes) { h.mode = 'stand'; h.hold = false; } }
     function peek(x, z, D = 5) { focus = x === null ? null : { look: new T.Vector3(X(x), 0.3, Z(z)), D }; }
 
     // ---------------------------------------------------------------- render
     function render(dt) {
-      if (focus && camGoal.dir) {
-        const pos = focus.look.clone().addScaledVector(camGoal.dir, focus.D);
-        const k = snapCam ? 1 : 1 - Math.exp(-3 * dt);
-        camNow.pos.lerp(pos, k);
-        camNow.look.lerp(focus.look, k);
+      const goalPos = focus && camGoal.dir ? focus.look.clone().addScaledVector(camGoal.dir, focus.D) : camGoal.pos;
+      const goalLook = focus && camGoal.dir ? focus.look : camGoal.look;
+      if (snapCam || !Number.isFinite(camNow.pos.x + camNow.look.x)) {
+        camNow.pos.copy(goalPos);
+        camNow.look.copy(goalLook);
       } else {
-        const k = snapCam ? 1 : 1 - Math.exp(-4 * dt);
-        camNow.pos.lerp(camGoal.pos, k);
-        camNow.look.lerp(camGoal.look, k);
+        const k = 1 - Math.exp(-(focus ? 3 : 4) * dt);
+        camNow.pos.lerp(goalPos, k);
+        camNow.look.lerp(goalLook, k);
       }
       snapCam = false;
       camera.position.copy(camNow.pos);
@@ -1085,7 +1109,7 @@
       renderer, scene, camera,
       build: buildGarden, sync, handle, render, resize, setSafe, fit, pick, toScreen, isPortrait,
       setCursor, setRange, setHint, heroMode, signature, buddyArrive, buddyMode, buddyLeave, tossTreat, treatLanded,
-      throwBalloon, splashLane, highFive, startCelebrate, stopCelebrate, peek, icons, popup,
+      throwBalloon, splashLane, highFive, startCelebrate, stopCelebrate, resultView, peek, icons, popup,
       get counts() { return { critters: critters.size, towers: towers.size, shots: shots.size, floaters: floaters.length, runners: runners.length, popups: popups.length }; },
       get buddy() { return buddy; },
       get heroes() { return heroes; },

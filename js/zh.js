@@ -48,18 +48,18 @@
     // title and gardens
     'Save the picnic from the snack-stealing critters!': '花园保卫战：别让小动物偷走野餐零食！',
     'Teddy and Tommy save the picnic together! Press T for a high five!': 'Teddy 和 Tommy 一起保卫野餐！按 T 击掌！',
-    '🐣 EASY': '🐣 简单', '🔥 NORMAL': '🔥 普通', '◀ BACK': '◀ 返回', 'Pick a garden': '选一个花园', 'GARDEN': '花园', 'GARDENS': '花园',
+    '🐣 EASY': '🐣 简单', '🔥 NORMAL': '🔥 普通', '◀ BACK': '◀ 返回', 'Pick a garden': '选一个花园', 'GARDENS': '花园',
     // HUD
     '▶ GO!': '▶ 出发！', '▶ BOSS!': '▶ 大王！', 'NEXT WAVE:': '下一波次：', '✋ HIGH FIVE!': '✋ 击掌！',
     'Coins': '金币', 'Snacks left': '剩下的零食', 'Wave': '波次', 'Send the next wave now (G)': '马上派出下一波次 (G)', 'Fast (F)': '快进 (F)',
     'Call your brother (T)': '叫兄弟来帮忙 (T)', 'High five (T)': '击掌 (T)', 'Pause (P)': '暂停 (P)', 'Sound (M)': '声音 (M)',
     // build menus
     'Upgrade: bigger, faster, wetter!': '升级：更大、更快、更湿！', 'All the way up!': '已经升到最高级啦！',
-    'Pack it up and get coins back.': '收起来，拿回金币。', 'Need': '还差', 'more coins!': '金币！',
+    'Pack it up and get coins back.': '收起来，拿回金币。',
     'Towers go on the grass, next to the path!': '塔要放在小路旁边的草地上！', 'No room here. Try the grass!': '这里放不下。试试草地！',
     // toasts and banners
-    'Oh no! A critter took a snack!': '哎呀！小动物拿走了一个零食！', 'IS HERE!': '来啦！', 'SAYS:': '说：',
-    'HIGH FIVE!': '击掌！', 'WAVE': '波次', 'LAST WAVE!': '最后一波！', 'BANDIT BOSS!': '强盗大王来了！',
+    'Oh no! A critter took a snack!': '哎呀！小动物拿走了一个零食！',
+    'HIGH FIVE!': '击掌！', 'LAST WAVE!': '最后一波！', 'BANDIT BOSS!': '强盗大王来了！',
     'GARDEN SAVED!': '花园保住啦！', 'OH NO, THE SNACKS!': '哎呀，零食！',
     // results and pause
     'THE CRITTERS GOT THE SNACKS!': '小动物拿走了零食！', 'NEW BEST!': '新纪录！', 'NEXT ▶': '下一关 ▶', '↻ PLAY AGAIN': '↻ 再玩一次',
@@ -67,7 +67,7 @@
     // words that pop up in the garden
     'CRUNCH!': '咔嚓！', 'NOM!': '啊呜！', 'SPLASH!': '哗啦！', 'Zzz': '呼呼',
     // the ? panel
-    'Teddy (1P)': 'Teddy（玩家 1）', 'Tommy (2P)': 'Tommy（玩家 2）', 'move the box': '移动方框', 'open the menu · pick': '打开菜单 · 选择',
+    'Backspace': '退格', 'Teddy (1P)': 'Teddy（玩家 1）', 'Tommy (2P)': 'Tommy（玩家 2）', 'move the box': '移动方框', 'open the menu · pick': '打开菜单 · 选择',
     'close the menu': '关上菜单', 'build a tower right away': '马上放塔', 'upgrade the tower': '给塔升级',
     'next wave now · fast': '马上下一波次 · 快进', 'title: who · easy · play': '标题页：选人 · 简单 · 开始',
     'Tap the grass next to the path to build a tower. Tap a tower to upgrade it. The face at the top calls your brother.':
@@ -75,10 +75,16 @@
   }));
 
   L.rule(/^Your buddy (\S+) comes when you call him!$/, '叫一声，你的好帮手 $1 就来啦！');
+  L.rule(/^(TEDDY|TOMMY) IS HERE!$/, '$1 来啦！');
+  L.rule(/^(TEDDY|TOMMY) SAYS: (.+)$/, (m, who, line) => `${who} 说：${HELPER[line] || line}`);
   L.rule(/^WAVE (\d+) DONE! \+(\d+) 🪙$/, '第 $1 波次完成！+$2 🪙');
   L.rule(/^HIGH FIVE! \+(\d+) 🪙$/, '击掌！+$1 🪙');
   L.rule(/^(.+) floated (\d+) critters away and kept (\d+) of (\d+) snacks!$/, '$1 让 $2 只小动物飘走啦，保住了 $3 / $4 个零食！');
   L.rule(/^(.+) floated (\d+) critters away\. Try again!$/, '$1 让 $2 只小动物飘走啦。再试一次！');
   L.rule(/^(Water Squirter|Bubble Blower|Jelly Slower|Cookie Catapult|Sprinkler) (★{1,3})$/, (m, name, st) => `${TOWERS[name]} ${st}`);
   L.rule(/^SCORE (\d+) · BEST (\d+)$/, '得分 $1 · 最高分 $2');
+  L.rule(/^GARDEN (\d+)$/, '花园 $1');
+  L.rule(/^WAVE (\d+)$/, '第 $1 波次');
+  L.rule(/^GARDEN (\d+) · (🐣 EASY|🔥 NORMAL)$/, (m, n, d) => `花园 ${n} · ${d[0] === '🐣' ? '🐣 简单' : '🔥 普通'}`);
+  L.rule(/^Need 🪙(\d+) more coins!$/, '还差 🪙$1 金币！');
 })();

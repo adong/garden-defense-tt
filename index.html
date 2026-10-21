@@ -202,6 +202,7 @@
   .lvl.focus { box-shadow: 0 0 0 5px #2a8be0, 0 5px 0 rgba(0,0,0,0.25); }
   @keyframes nudge { 50% { transform: translateY(-5px); box-shadow: 0 0 0 5px var(--gold), 0 9px 0 rgba(0,0,0,0.25); } }
 
+  #result > .panel { margin-top: auto; margin-bottom: 4vh; }
   #result .stars { font-size: clamp(46px, 7vw, 72px); letter-spacing: 6px; line-height: 1; margin: 6px 0; }
   #result .stars i { font-style: normal; filter: grayscale(1) opacity(0.35); }
   #result h2 { margin: 0; font: 400 clamp(25px, 4.2vw, 44px) / 1.05 var(--title); }
@@ -225,7 +226,8 @@
     .mi img { width: 52px; height: 48px; }
     .mi .big { line-height: 48px; height: 48px; font-size: 30px; }
     .mi .cost { height: 22px; font-size: 13px; }
-    .menu .head { font-size: 12px; padding-bottom: 4px; }
+    .menu .head { font-size: 12px; padding-bottom: 4px; min-height: 0; }
+    .menu .head .tip { display: none; }
     .menu .head b { font-size: 13px; }
     .screen { gap: 8px; }
     h1.logo { font-size: clamp(28px, 6vw, 48px); }
