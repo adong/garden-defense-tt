@@ -1,0 +1,349 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#3f8f3a">
+<title>TT Garden Defense · Teddy &amp; Tommy</title>
+<!-- The game's icon: the same emoji as its card on the dashboard, on a coloured tile. It's the browser tab's icon (the SVG, then
+     a PNG drawn below) and the iPad home screen's (apple-touch-icon). The device's own emoji font draws it: no image files. -->
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2064%2064'%3E%3Crect%20x='2'%20y='2'%20width='60'%20height='60'%20rx='14'%20fill='%2318d4ff'%20stroke='%2314121f'%20stroke-width='4'/%3E%3Ctext%20x='32'%20y='44'%20font-size='36'%20text-anchor='middle'%3E%F0%9F%8C%BB%3C/text%3E%3C/svg%3E">
+<script>
+  (function (emoji, tile) {
+    function draw(size, framed) {
+      const c = document.createElement('canvas');
+      c.width = c.height = size;
+      const g = c.getContext('2d');
+      if (!g) return '';
+      const u = size / 64;
+      g.fillStyle = tile;
+      if (framed) { // the tab: a rounded tile with the dashboard's dark outline
+        g.beginPath();
+        if (g.roundRect) g.roundRect(2 * u, 2 * u, 60 * u, 60 * u, 14 * u); else g.rect(2 * u, 2 * u, 60 * u, 60 * u);
+        g.fill();
+        g.lineWidth = 4 * u;
+        g.strokeStyle = '#14121f';
+        g.stroke();
+      } else g.fillRect(0, 0, size, size); // the home screen: iOS rounds the corners itself
+      g.font = `${Math.round(size * (framed ? 0.56 : 0.62))}px "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif`;
+      g.textAlign = 'center';
+      const m = g.measureText(emoji);
+      const up = m.actualBoundingBoxAscent || size * 0.4, down = m.actualBoundingBoxDescent || 0;
+      g.fillText(emoji, size / 2, size / 2 + (up - down) / 2);
+      try { return c.toDataURL('image/png'); } catch (e) { return ''; }
+    }
+    const tab = draw(64, true), home = draw(180, false);
+    if (tab) document.querySelector('link[rel="icon"]').href = tab;
+    if (home) {
+      const l = document.createElement('link');
+      l.rel = 'apple-touch-icon';
+      l.href = home;
+      document.head.appendChild(l);
+    }
+  })('🌻', '#18d4ff');
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bungee&family=Nunito:wght@800;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1b1a22;
+    --cream: #fff7e0;
+    --gold: #ffd21f;
+    --bar: 58px;
+    --title: "Bungee", "Arial Black", Impact, sans-serif;
+    --body: "Nunito", "Arial Rounded MT Bold", "Trebuchet MS", sans-serif;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #3f8f3a; color: var(--ink); font-family: var(--body);
+    touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+  #view { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+  button { font-family: var(--body); cursor: pointer; color: var(--ink); }
+  .hidden { display: none !important; }
+
+  /* ---------------- HUD */
+  #hud { position: fixed; inset: 0; pointer-events: none; }
+  #hud > * { pointer-events: auto; }
+  #topbar { position: absolute; left: 0; right: 0; top: 0; display: flex; align-items: center; flex-wrap: wrap; gap: 6px;
+    padding: calc(6px + env(safe-area-inset-top)) calc(8px + env(safe-area-inset-right)) 6px calc(8px + env(safe-area-inset-left));
+    background: linear-gradient(#7a5230, #5f3e22); border-bottom: 4px solid #3f2812; box-shadow: 0 4px 0 rgba(0,0,0,0.18); }
+  .stat { flex: none; height: 46px; min-width: 76px; padding: 0 12px 0 8px; background: #3a2410; border: 3px solid var(--ink); border-radius: 14px;
+    display: flex; align-items: center; gap: 6px; color: #fff; }
+  .stat .ic { font-size: 24px; line-height: 1; }
+  .stat b { font: 900 22px var(--body); line-height: 1; white-space: nowrap; }
+  .stat.pulse { animation: pulse 0.25s; }
+  .stat.shake { animation: shake 0.4s; background: #6a1a10; }
+  .stat.poor b { color: #ff9f8a; }
+  @keyframes pulse { 50% { transform: scale(1.12); } }
+  @keyframes shake { 20%, 60% { transform: translateX(-6px); } 40%, 80% { transform: translateX(6px); } }
+  .act { flex: none; height: 46px; border: 3px solid var(--ink); border-radius: 14px; background: var(--cream); font: 900 18px var(--body);
+    padding: 0 12px; display: flex; align-items: center; gap: 6px; box-shadow: 0 3px 0 rgba(0,0,0,0.3); }
+  .act:active { transform: translateY(2px); box-shadow: none; }
+  #btnGo { background: linear-gradient(#b6f24a, #5fc23a); min-width: 108px; justify-content: center; }
+  #btnGo.boss { background: linear-gradient(#ffb0a0, #ff6a4a); }
+  #btnGo.nudge { animation: nudgeGo 1s infinite; }
+  @keyframes nudgeGo { 50% { transform: scale(1.08); box-shadow: 0 0 0 4px var(--gold), 0 3px 0 rgba(0,0,0,0.3); } }
+  #btnGo small { font: 900 14px var(--body); background: rgba(27,26,34,0.75); color: #fff; border-radius: 10px; padding: 1px 6px; }
+  #btnFast { width: 50px; padding: 0; justify-content: center; font-size: 22px; }
+  #btnFast.on { background: linear-gradient(#fff3a0, #ffd21f); }
+  .grow { flex: 1; }
+  .round { flex: none; width: 46px; height: 46px; border: 3px solid var(--ink); border-radius: 14px; background: var(--cream);
+    font: 900 18px var(--body); display: flex; align-items: center; justify-content: center; padding: 0; }
+  #buddyBtn { flex: none; height: 46px; border: 3px solid var(--ink); border-radius: 23px; background: linear-gradient(#fff3c4, #ffc24a); padding: 0 12px 0 2px;
+    display: flex; align-items: center; gap: 6px; position: relative; box-shadow: 0 3px 0 rgba(0,0,0,0.3); }
+  #buddyBtn img { width: 38px; height: 38px; border-radius: 50%; background: #ffe7a6; object-fit: cover; object-position: center top; pointer-events: none; }
+  #buddyBtn img + img { margin-left: -16px; }
+  #buddyBtn span { font: 400 16px var(--title); white-space: nowrap; }
+  #buddyBtn .key { position: absolute; top: -9px; right: -6px; background: var(--ink); color: #fff; font: 900 11px var(--body); border-radius: 8px; padding: 1px 5px; }
+  #buddyBtn:active { transform: translateY(2px) scale(0.97); }
+  #buddyBtn.here { animation: glow 0.9s infinite alternate; }
+  @keyframes glow { from { box-shadow: 0 0 0 3px #fff, 0 0 14px #ffd21f; } to { box-shadow: 0 0 0 5px #ffd21f, 0 0 26px #ffd21f; } }
+  #next { position: absolute; left: 50%; transform: translateX(-50%); top: calc(var(--bar) + 6px); display: flex; align-items: center; gap: 4px;
+    background: rgba(27,26,34,0.7); color: #fff; border-radius: 20px; padding: 2px 12px 2px 10px; font: 900 15px var(--body); pointer-events: none; white-space: nowrap; }
+  #next img { width: 30px; height: 30px; object-fit: contain; }
+  #next:empty { display: none; }
+
+  /* ---------------- build menus */
+  .menu { position: fixed; z-index: 8; background: var(--cream); border: 4px solid var(--ink); border-radius: 20px; padding: 6px 8px 8px;
+    box-shadow: 0 8px 0 rgba(0,0,0,0.25); pointer-events: auto; touch-action: none; max-width: calc(100vw - 16px); }
+  .menu.p1 { border-color: #2a6bc0; } .menu.p2 { border-color: #e08a00; }
+  .menu .head { font: 900 14px var(--body); text-align: center; padding: 0 4px 6px; max-width: 360px; line-height: 1.2; min-height: 20px; }
+  .menu .head b { font: 400 15px var(--title); display: block; }
+  .menu .items { display: flex; gap: 6px; justify-content: center; }
+  .mi { position: relative; width: 66px; height: 84px; border: 3px solid var(--ink); border-radius: 14px; background: #fff; padding: 0;
+    display: flex; flex-direction: column; align-items: center; justify-content: flex-start; overflow: hidden; touch-action: none; }
+  .mi img { width: 60px; height: 56px; object-fit: contain; pointer-events: none; margin-top: 1px; }
+  .mi .big { font-size: 34px; line-height: 56px; height: 56px; }
+  .mi .cost { position: absolute; left: 0; right: 0; bottom: 0; height: 24px; display: flex; align-items: center; justify-content: center;
+    font: 900 15px var(--body); background: #ffe7a6; border-top: 2px solid var(--ink); white-space: nowrap; }
+  .mi .num { position: absolute; left: 4px; top: 1px; font: 900 11px var(--body); color: rgba(27,26,34,0.45); }
+  .mi.poor img, .mi.poor .big { filter: grayscale(0.85) brightness(0.85); }
+  .mi.poor .cost { color: #b03020; }
+  .mi.focus { box-shadow: 0 0 0 4px var(--gold); transform: translateY(-3px); }
+  .mi.off { opacity: 0.45; }
+  .mi.close { width: 46px; background: #f3e6c8; }
+  .mi.close .big { font-size: 26px; }
+  .mi.hint::after { content: '✨'; position: absolute; right: 2px; top: 0; font-size: 18px; animation: twinkle 0.8s infinite alternate; }
+  @keyframes twinkle { to { transform: scale(1.3) rotate(15deg); } }
+  .menu .tag { position: absolute; top: -14px; left: 12px; background: var(--ink); color: #fff; font: 900 11px var(--body); border-radius: 8px; padding: 1px 7px; }
+
+  #toasts { position: fixed; left: 50%; top: 34%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 8px; pointer-events: none; z-index: 9; }
+  .toast { background: var(--ink); color: #fff; font: 900 clamp(17px, 2.4vw, 26px) var(--body); padding: 8px 20px; border-radius: 30px; border: 3px solid #fff;
+    white-space: nowrap; animation: toastIn 0.25s ease-out; box-shadow: 0 6px 0 rgba(0,0,0,0.25); max-width: 94vw; overflow: hidden; text-overflow: ellipsis; }
+  .toast.gold { background: linear-gradient(#ffe066, #ffb02e); color: var(--ink); border-color: var(--ink); font-family: var(--title); font-weight: 400; }
+  #tipbox { position: fixed; left: 50%; bottom: calc(10px + env(safe-area-inset-bottom)); transform: translateX(-50%); pointer-events: none; z-index: 9; width: max-content; max-width: min(620px, calc(100vw - 130px)); }
+  .toast.tip { background: #fff; color: var(--ink); border-color: var(--ink); font-size: clamp(15px, 2vw, 20px); white-space: normal; text-align: center; padding: 6px 16px; }
+  .toast.warn { background: #fff; color: #b03020; border-color: var(--ink); font-size: clamp(15px, 2vw, 21px); }
+  @keyframes toastIn { from { transform: scale(0.4); opacity: 0; } }
+  #banner { position: fixed; left: 0; right: 0; top: 42%; transform: translateY(-50%); text-align: center; pointer-events: none; z-index: 9;
+    font: 400 clamp(36px, 7.5vw, 90px) var(--title); color: #fff; -webkit-text-stroke: 3px var(--ink); text-shadow: 0 6px 0 var(--ink), 0 0 30px rgba(0,0,0,0.3); }
+  #banner.show { animation: bannerIn 0.35s cubic-bezier(.2,1.6,.4,1); }
+  #banner.boss { color: #ff8a6a; }
+  #banner small { display: block; font-size: 0.4em; -webkit-text-stroke: 2px var(--ink); }
+
+  /* ---------------- screens */
+  .screen { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; z-index: 10;
+    padding: max(14px, env(safe-area-inset-top)) 14px max(14px, env(safe-area-inset-bottom)) calc(64px + env(safe-area-inset-left)); overflow-y: auto; touch-action: pan-y; }
+  .screen > * { flex-shrink: 0; }
+  .screen > :first-child { margin-top: auto; }
+  .screen > :last-child { margin-bottom: auto; }
+  .dim { background: rgba(20, 40, 20, 0.5); }
+  #title { background: radial-gradient(ellipse at center, rgba(255,255,255,0) 30%, rgba(20,50,20,0.45)); }
+  .panel { background: var(--cream); border: 5px solid var(--ink); border-radius: 26px; padding: 18px 22px; box-shadow: 0 10px 0 rgba(0,0,0,0.3); text-align: center; max-width: 94vw; }
+  h1.logo { margin: 0; font: 400 clamp(34px, 7.2vw, 84px) / 0.95 var(--title); color: #ffe066; -webkit-text-stroke: 3px var(--ink);
+    text-shadow: 0 7px 0 var(--ink), 0 0 40px rgba(0,0,0,0.35); text-align: center; letter-spacing: 1px; }
+  h1.logo em { font-style: normal; color: #9dff6a; }
+  .sub { font: 900 clamp(17px, 2.5vw, 26px) var(--body); color: #fff; text-shadow: 0 3px 0 var(--ink); margin-top: -4px; text-align: center; }
+  .who { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; }
+  .pick { width: clamp(118px, 17vw, 172px); border: 5px solid var(--ink); border-radius: 22px; background: #fff; padding: 6px 6px 0; overflow: hidden;
+    box-shadow: 0 7px 0 rgba(0,0,0,0.3); transition: transform 0.12s; position: relative; }
+  .pick .pics { display: flex; justify-content: center; aspect-ratio: 1; }
+  .pick img { width: 100%; height: 100%; object-fit: contain; display: block; pointer-events: none; }
+  .pick.both img { width: 58%; object-fit: cover; object-position: center top; }
+  .pick.both img + img { margin-left: -16%; }
+  .pick span { display: block; margin: 0 -6px; padding: 6px 0 8px; background: var(--ink); color: #fff; font: 400 clamp(15px, 2vw, 22px) var(--title); white-space: nowrap; }
+  .pick.teddy { background: linear-gradient(#e2f0ff, #8cc2ff); }
+  .pick.tommy { background: linear-gradient(#fff2d6, #ffb02e); }
+  .pick.both { background: linear-gradient(#e7ffd9, #7ed957); }
+  .pick.on { transform: translateY(-6px) scale(1.05); box-shadow: 0 0 0 6px var(--gold), 0 12px 0 rgba(0,0,0,0.3); }
+  .pick:not(.on) { filter: saturate(0.6) brightness(0.92); }
+  .buddyline { font: 900 clamp(15px, 2vw, 20px) var(--body); color: #fff; text-shadow: 0 2px 0 var(--ink); display: flex; align-items: center; gap: 8px; text-align: center; }
+  .buddyline img { width: 40px; height: 40px; border-radius: 50%; background: #ffe7a6; border: 3px solid var(--ink); object-fit: cover; object-position: center top; flex: none; }
+  .row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; justify-content: center; }
+  .btn { border: 4px solid var(--ink); border-radius: 20px; background: #fff; font: 400 clamp(19px, 2.5vw, 27px) var(--title); padding: 10px 22px;
+    box-shadow: 0 6px 0 rgba(0,0,0,0.3); min-height: 62px; }
+  .btn:active { transform: translateY(4px); box-shadow: 0 2px 0 rgba(0,0,0,0.3); }
+  .btn.go { background: linear-gradient(#b6f24a, #5fc23a); font-size: clamp(25px, 3.4vw, 38px); padding: 10px 38px; }
+  .btn.small { font-size: clamp(16px, 2vw, 20px); min-height: 54px; padding: 8px 16px; }
+  .seg { display: flex; border: 4px solid var(--ink); border-radius: 20px; overflow: hidden; box-shadow: 0 6px 0 rgba(0,0,0,0.3); }
+  .seg button { border: 0; background: #fff; font: 400 clamp(16px, 2vw, 21px) var(--title); padding: 8px 16px; min-height: 54px; }
+  .seg button + button { border-left: 4px solid var(--ink); }
+  .seg button.on { background: linear-gradient(#fff3a0, #ffd21f); }
+  .seg button:not(.on) { color: #7a7468; }
+
+  #levels .worlds { display: flex; flex-direction: column; gap: 12px; }
+  .world { display: flex; align-items: center; gap: 10px; background: rgba(255,247,224,0.95); border: 4px solid var(--ink); border-radius: 22px; padding: 8px 12px; }
+  .world.flower { background: rgba(255,226,242,0.96); }
+  .world.moon { background: rgba(206,210,250,0.96); }
+  .world h3 { margin: 0; width: 118px; font: 400 14px var(--title); text-align: center; line-height: 1.15; }
+  .world h3 b { display: block; font-size: 28px; }
+  .lvl { position: relative; width: clamp(84px, 11.5vw, 120px); height: clamp(84px, 10.5vw, 106px); border: 4px solid var(--ink); border-radius: 18px; background: #fff;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 4px; box-shadow: 0 5px 0 rgba(0,0,0,0.25); }
+  .lvl b { font: 400 clamp(20px, 2.6vw, 28px) var(--title); line-height: 1; }
+  .lvl small { font: 900 11px var(--body); line-height: 1.1; margin-top: 2px; text-align: center; }
+  .lvl .st { font-size: 17px; letter-spacing: 1px; color: #e0a000; line-height: 1.1; }
+  .lvl .st i { font-style: normal; color: #c9c3b0; }
+  .lvl .boss { position: absolute; left: -10px; top: -14px; width: 40px; height: 40px; background: #fff; border: 3px solid var(--ink); border-radius: 50%; padding: 2px; }
+  .lvl.locked { background: #b8b2a2; color: #6b6658; }
+  .lvl.locked::after { content: '🔒'; position: absolute; font-size: 32px; }
+  .lvl.locked > * { opacity: 0.25; }
+  .lvl.next { animation: nudge 1.2s infinite; }
+  .lvl.focus { box-shadow: 0 0 0 5px #2a8be0, 0 5px 0 rgba(0,0,0,0.25); }
+  @keyframes nudge { 50% { transform: translateY(-5px); box-shadow: 0 0 0 5px var(--gold), 0 9px 0 rgba(0,0,0,0.25); } }
+
+  #result .stars { font-size: clamp(46px, 7vw, 72px); letter-spacing: 6px; line-height: 1; margin: 6px 0; }
+  #result .stars i { font-style: normal; filter: grayscale(1) opacity(0.35); }
+  #result h2 { margin: 0; font: 400 clamp(25px, 4.2vw, 44px) / 1.05 var(--title); }
+  #result p { margin: 6px 0; font: 900 clamp(16px, 2vw, 21px) var(--body); }
+  #result .newbest { display: inline-block; background: #ff4d6d; color: #fff; border-radius: 10px; padding: 1px 8px; margin-left: 6px; font-size: 0.85em; }
+  #pause h2 { font: 400 clamp(32px, 5vw, 54px) var(--title); margin: 0 0 6px; }
+  #pause p { font: 900 16px var(--body); margin: 8px 0 0; }
+
+  /* small screens: everything a bit tighter */
+  @media (max-height: 520px) {
+    :root { --bar: 50px; }
+    .stat, .act, .round, #buddyBtn { height: 40px; }
+    .round { width: 40px; }
+    #buddyBtn img { width: 32px; height: 32px; }
+    #buddyBtn span { font-size: 13px; }
+    .stat { min-width: 64px; padding: 0 8px 0 6px; }
+    .stat .ic { font-size: 20px; }
+    .stat b { font-size: 18px; }
+    #btnGo { min-width: 92px; font-size: 16px; }
+    .mi { width: 58px; height: 74px; }
+    .mi img { width: 52px; height: 48px; }
+    .mi .big { line-height: 48px; height: 48px; font-size: 30px; }
+    .mi .cost { height: 22px; font-size: 13px; }
+    .menu .head { font-size: 12px; padding-bottom: 4px; }
+    .menu .head b { font-size: 13px; }
+    .screen { gap: 8px; }
+    h1.logo { font-size: clamp(28px, 6vw, 48px); }
+    .pick { width: 104px; }
+    .btn { min-height: 50px; padding: 6px 16px; }
+    .btn.go { padding: 6px 26px; }
+    .lvl { height: 70px; width: 80px; }
+    .lvl .st { font-size: 14px; }
+    .lvl .boss { width: 32px; height: 32px; }
+    .world { padding: 4px 8px; }
+    .world h3 { width: 86px; font-size: 11px; }
+    .world h3 b { font-size: 20px; }
+    #levels .worlds { gap: 6px; }
+  }
+  @media (max-width: 560px) {
+    .stat { min-width: 0; padding: 0 8px 0 6px; }
+    #buddyBtn span { display: none; }
+    #buddyBtn { padding: 0 4px 0 2px; }
+    .world { flex-wrap: wrap; justify-content: center; }
+    .world h3 { width: 100%; }
+    .world h3 b { display: inline; margin-right: 6px; }
+  }
+  /* 中文: Bungee has no Chinese, so the system font fills in; ask it for its boldest weight (Bungee itself stays as it is) */
+  .lang-zh .btn, .lang-zh #banner, .lang-zh .toast, .lang-zh #result h2, .lang-zh #pause h2, .lang-zh .pick span, .lang-zh .world h3,
+  .lang-zh #buddyBtn span, .lang-zh .menu .head b, .lang-zh .seg button { font-weight: 900; font-synthesis: none; }
+  body.calm *, body.calm *::before, body.calm *::after { animation: none !important; transition: none !important; }
+</style>
+</head>
+<body>
+<canvas id="view"></canvas>
+
+<div id="hud" class="hidden">
+  <div id="topbar">
+    <div class="stat" id="coinsBox" title="Coins"><span class="ic">🪙</span><b id="coinsN">0</b></div>
+    <div class="stat" id="snacksBox" title="Snacks left"><span class="ic">🧺</span><b id="snacksN">0</b></div>
+    <div class="stat" id="waveBox" title="Wave"><span class="ic">🌊</span><b id="waveN">1/5</b></div>
+    <button class="act" id="btnGo" title="Send the next wave now (G)"><span id="goLabel">▶ GO!</span> <small id="goT">0</small></button>
+    <button class="act" id="btnFast" title="Fast (F)">⏩</button>
+    <div class="grow"></div>
+    <button id="buddyBtn" title="Call your brother (T)"><img id="buddyImg" alt=""><img id="buddyImg2" class="hidden" alt=""><span id="buddyName">TOMMY!</span><span class="key">T</span></button>
+    <button class="round" id="btnPause" title="Pause (P)">❚❚</button>
+    <button class="round" id="btnMute" title="Sound (M)">🔊</button>
+  </div>
+  <div id="next"></div>
+</div>
+<div id="menu0" class="menu p1 hidden"></div>
+<div id="menu1" class="menu p2 hidden"></div>
+<div id="toasts"></div>
+<div id="tipbox"></div>
+<div id="banner"></div>
+
+<div id="title" class="screen">
+  <h1 class="logo" id="logo" data-no-lang>TT Garden Defense</h1>
+  <div class="sub" id="tagline">Save the picnic from the snack-stealing critters!</div>
+  <div class="who">
+    <button class="pick teddy" data-who="teddy"><div class="pics"><img alt="Teddy"></div><span>TEDDY</span></button>
+    <button class="pick tommy" data-who="tommy"><div class="pics"><img alt="Tommy"></div><span>TOMMY</span></button>
+    <button class="pick both" data-who="both"><div class="pics"><img alt="Teddy"><img alt="Tommy"></div><span>2 PLAYERS</span></button>
+  </div>
+  <div class="buddyline"><img id="titleBuddy" alt=""><span id="titleBuddyText">Your buddy TOMMY comes when you call him!</span></div>
+  <div class="row">
+    <div class="seg"><button id="btnEasy">🐣 EASY</button><button id="btnNormal">🔥 NORMAL</button></div>
+    <button class="btn go" id="btnPlay">▶ PLAY</button>
+  </div>
+</div>
+
+<div id="levels" class="screen dim hidden">
+  <div class="row"><button class="btn small" id="btnBack">◀ BACK</button><h1 class="logo" style="font-size:clamp(26px,4.2vw,46px)">Pick a garden</h1></div>
+  <div class="worlds" id="worlds"></div>
+</div>
+
+<div id="pause" class="screen dim hidden">
+  <div class="panel">
+    <h2>PAUSED</h2>
+    <div class="row">
+      <button class="btn go" id="btnResume">▶ RESUME</button>
+      <button class="btn small" id="btnRestart">↻ AGAIN</button>
+      <button class="btn small" id="btnPauseLevels">GARDENS</button>
+      <button class="btn small" id="btnHome">HOME</button>
+    </div>
+    <p id="pauseInfo"></p>
+  </div>
+</div>
+
+<div id="result" class="screen dim hidden">
+  <div class="panel">
+    <h2 id="resTitle"></h2>
+    <div class="stars" id="resStars"></div>
+    <p id="resText"></p>
+    <p id="resScore"></p>
+    <div class="row" style="margin-top:10px">
+      <button class="btn go" id="btnNext">NEXT ▶</button>
+      <button class="btn small" id="btnAgain">↻ PLAY AGAIN</button>
+      <button class="btn small" id="btnTryEasy">🐣 TRY EASY</button>
+      <button class="btn small" id="btnResLevels">GARDENS</button>
+    </div>
+  </div>
+</div>
+
+<script src="kit/three.min.js"></script>
+<script src="kit/gfx.js"></script>
+<script src="kit/people.js"></script>
+<script src="kit/roster.js"></script>
+<script src="kit/portraits.js"></script>
+<script src="kit/sound.js"></script>
+<script src="kit/lang.js"></script>
+<script src="kit/help.js"></script>
+<script src="js/title.js"></script>
+<script src="js/units.js"></script>
+<script src="js/levels.js"></script>
+<script src="js/sim.js"></script>
+<script src="js/bot.js"></script>
+<script src="js/check.js"></script>
+<script src="js/models.js"></script>
+<script src="js/sfx.js"></script>
+<script src="js/view.js"></script>
+<script src="js/game.js"></script>
+<script src="js/keys.js"></script>
+<script src="js/zh.js"></script>
+</body>
+</html>
